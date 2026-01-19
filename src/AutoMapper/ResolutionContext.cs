@@ -1,234 +1,116 @@
-using System;
-using System.Collections.Generic;
-
-namespace AutoMapper
+using System.Runtime.CompilerServices;
+namespace AutoMapper;
+/// <summary>
+/// Context information regarding resolution of a destination value
+/// </summary>
+public sealed class ResolutionContext : IInternalRuntimeMapper
 {
-	public class ResolutionContext : IEquatable<ResolutionContext>
-	{
-	    public MappingOperationOptions Options { get; private set; }
-	    public TypeMap TypeMap { get; private set; }
-	    public PropertyMap PropertyMap { get; private set; }
-	    public Type SourceType { get; private set; }
-	    public Type DestinationType { get; private set; }
-	    public int? ArrayIndex { get; private set; }
-	    public object SourceValue { get; private set; }
-	    public object DestinationValue { get; private set; }
-	    public ResolutionContext Parent { get; private set; }
-	    public Dictionary<ResolutionContext, object> InstanceCache { get; private set; }
-
-	    public ResolutionContext(TypeMap typeMap, object source, Type sourceType, Type destinationType, MappingOperationOptions options)
-			: this(typeMap, source, null, sourceType, destinationType, options)
-	    {
-	    }
-
-        public ResolutionContext(TypeMap typeMap, object source, object destination, Type sourceType, Type destinationType, MappingOperationOptions options)
-		{
-			TypeMap = typeMap;
-			SourceValue = source;
-			DestinationValue = destination;
-            AssignTypes(typeMap, sourceType, destinationType);
-			InstanceCache = new Dictionary<ResolutionContext, object>();
-            Options = options;
-        }
-
-        private void AssignTypes(TypeMap typeMap, Type sourceType, Type destinationType)
+    private Dictionary<ContextCacheKey, object> _instanceCache;
+    private Dictionary<TypePair, int> _typeDepth;
+    private readonly IInternalRuntimeMapper _mapper;
+    private readonly IMappingOperationOptions _options;
+    internal ResolutionContext(IInternalRuntimeMapper mapper, IMappingOperationOptions options = null)
+    {
+        _mapper = mapper;
+        _options = options;
+    }
+    /// <summary>
+    /// The state passed in the options of the Map call.
+    /// Mutually exclusive with <see cref="Items"/> per Map call.
+    /// </summary>
+    public object State => _options?.State;
+    /// <summary>
+    /// The items passed in the options of the Map call.
+    /// Mutually exclusive with <see cref="State"/> per Map call.
+    /// </summary>
+    public Dictionary<string, object> Items
+    {
+        get
         {
-            if (typeMap != null)
+            if (_options == null)
             {
-                SourceType = typeMap.SourceType;
-                DestinationType = typeMap.DestinationType;
+                ThrowInvalidMap();
             }
-            else
-            {
-                SourceType = sourceType;
-                DestinationType = destinationType;
-            }
+            return _options.Items;
         }
-
-		private ResolutionContext(ResolutionContext context, object sourceValue)
-		{
-			ArrayIndex = context.ArrayIndex;
-			TypeMap = context.TypeMap;
-			PropertyMap = context.PropertyMap;
-			SourceType = context.SourceType;
-			SourceValue = sourceValue;
-			DestinationValue = context.DestinationValue;
-			Parent = context;
-			DestinationType = context.DestinationType;
-			InstanceCache = context.InstanceCache;
-            Options = context.Options;
-		}
-
-		private ResolutionContext(ResolutionContext context, object sourceValue, Type sourceType)
-		{
-			ArrayIndex = context.ArrayIndex;
-			TypeMap = context.TypeMap;
-			PropertyMap = context.PropertyMap;
-			SourceType = sourceType;
-			SourceValue = sourceValue;
-			DestinationValue = context.DestinationValue;
-			Parent = context;
-			DestinationType = context.DestinationType;
-			InstanceCache = context.InstanceCache;
-            Options = context.Options;
-        }
-
-        private ResolutionContext(ResolutionContext context, TypeMap memberTypeMap, object sourceValue, Type sourceType, Type destinationType)
+    }
+    /// <summary>
+    /// The items passed in the options of the Map call. Returns false when no context was passed.
+    /// </summary>
+    public bool TryGetItems(out Dictionary<string, object> items) => (items = _options?.Items) != null;
+    /// <summary>
+    /// Current mapper
+    /// </summary>
+    public IRuntimeMapper Mapper => this;
+    ResolutionContext IInternalRuntimeMapper.DefaultContext => _mapper.DefaultContext;
+    /// <summary>
+    /// Instance cache for resolving circular references
+    /// </summary>
+    public Dictionary<ContextCacheKey, object> InstanceCache
+    {
+        get
         {
-            TypeMap = memberTypeMap;
-            SourceValue = sourceValue;
-            Parent = context;
-            AssignTypes(memberTypeMap, sourceType, destinationType);
-            InstanceCache = context.InstanceCache;
-            Options = context.Options;
+            CheckDefault();
+            return _instanceCache ??= [];
         }
-
-	    private ResolutionContext(ResolutionContext context, object sourceValue, object destinationValue, TypeMap memberTypeMap, PropertyMap propertyMap)
-		{
-			TypeMap = memberTypeMap;
-			PropertyMap = propertyMap;
-			SourceValue = sourceValue;
-            DestinationValue = destinationValue;
-			Parent = context;
-			InstanceCache = context.InstanceCache;
-            SourceType = memberTypeMap.SourceType;
-            DestinationType = memberTypeMap.DestinationType;
-            Options = context.Options;
-        }
-
-		private ResolutionContext(ResolutionContext context, object sourceValue, object destinationValue, Type sourceType, PropertyMap propertyMap)
-		{
-			PropertyMap = propertyMap;
-			SourceType = sourceType;
-			SourceValue = sourceValue;
-            DestinationValue = destinationValue;
-			Parent = context;
-			DestinationType = propertyMap.DestinationProperty.MemberType;
-			InstanceCache = context.InstanceCache;
-            Options = context.Options;
-        }
-
-		private ResolutionContext(ResolutionContext context, object sourceValue, TypeMap typeMap, Type sourceType, Type destinationType, int arrayIndex)
-		{
-			ArrayIndex = arrayIndex;
-			TypeMap = typeMap;
-			PropertyMap = context.PropertyMap;
-			SourceValue = sourceValue;
-			Parent = context;
-			InstanceCache = context.InstanceCache;
-            AssignTypes(typeMap, sourceType, destinationType);
-            Options = context.Options;
-        }
-
-		public string MemberName
-		{
-			get
-			{
-				return PropertyMap == null
-				       	? string.Empty
-				       	: (ArrayIndex == null
-				       	   	? PropertyMap.DestinationProperty.Name
-				       	   	: PropertyMap.DestinationProperty.Name + ArrayIndex.Value);
-			}
-		}
-
-		public bool IsSourceValueNull
-		{
-			get { return Equals(null, SourceValue); }
-		}
-
-		public ResolutionContext CreateValueContext(object sourceValue)
-		{
-			return new ResolutionContext(this, sourceValue);
-		}
-
-		public ResolutionContext CreateValueContext(object sourceValue, Type sourceType)
-		{
-			return new ResolutionContext(this, sourceValue, sourceType);
-		}
-
-        public ResolutionContext CreateTypeContext(TypeMap memberTypeMap, object sourceValue, Type sourceType, Type destinationType)
+    }
+    /// <summary>
+    /// Instance cache for resolving keeping track of depth
+    /// </summary>
+    private Dictionary<TypePair, int> TypeDepth
+    {
+        get
         {
-            return new ResolutionContext(this, memberTypeMap, sourceValue, sourceType, destinationType);
+            CheckDefault();
+            return _typeDepth ??= [];
         }
-
-        public ResolutionContext CreatePropertyMapContext(PropertyMap propertyMap)
+    }
+    TDestination IMapperBase.Map<TDestination>(object source) => ((IMapperBase)this).Map(source, default(TDestination));
+    TDestination IMapperBase.Map<TSource, TDestination>(TSource source) => _mapper.Map(source, default(TDestination), this);
+    TDestination IMapperBase.Map<TSource, TDestination>(TSource source, TDestination destination) => _mapper.Map(source, destination, this);
+    object IMapperBase.Map(object source, Type sourceType, Type destinationType) => _mapper.Map(source, (object)null, this, sourceType, destinationType);
+    object IMapperBase.Map(object source, object destination, Type sourceType, Type destinationType) => _mapper.Map(source, destination, this, sourceType, destinationType);
+    TDestination IInternalRuntimeMapper.Map<TSource, TDestination>(TSource source, TDestination destination, ResolutionContext context,
+        Type sourceType, Type destinationType, MemberMap memberMap) => _mapper.Map(source, destination, context, sourceType, destinationType, memberMap);
+    internal object CreateInstance(Type type) => ServiceCtor()(type) ?? throw new AutoMapperMappingException("Cannot create an instance of type " + type);
+    private Func<Type, object> ServiceCtor() => _options?.ServiceCtor ?? _mapper.ServiceCtor;
+    internal object GetDestination(object source, Type destinationType) => InstanceCache.GetValueOrDefault(new(source, destinationType));
+    internal void CacheDestination(object source, Type destinationType, object destination) => InstanceCache[new(source, destinationType)] = destination;
+    internal void IncrementTypeDepth(TypeMap typeMap) => TypeDepth[typeMap.Types]++;
+    internal void DecrementTypeDepth(TypeMap typeMap) => TypeDepth[typeMap.Types]--;
+    internal bool OverTypeDepth(TypeMap typeMap)
+    {
+        if (!TypeDepth.TryGetValue(typeMap.Types, out int depth))
         {
-            return new ResolutionContext(this, SourceValue, DestinationValue, SourceType, propertyMap);
+            TypeDepth[typeMap.Types] = 1;
+            depth = 1;
         }
-
-		public ResolutionContext CreateMemberContext(TypeMap memberTypeMap, object memberValue, object destinationValue, Type sourceMemberType, PropertyMap propertyMap)
-		{
-			return memberTypeMap != null
-			       	? new ResolutionContext(this, memberValue, destinationValue, memberTypeMap, propertyMap)
-			       	: new ResolutionContext(this, memberValue, destinationValue, sourceMemberType, propertyMap);
-		}
-
-		public ResolutionContext CreateElementContext(TypeMap elementTypeMap, object item, Type sourceElementType, Type destinationElementType, int arrayIndex)
-		{
-			return new ResolutionContext(this, item, elementTypeMap, sourceElementType, destinationElementType, arrayIndex);
-		}
-
-		public override string ToString()
-		{
-			return string.Format("Trying to map {0} to {1}.", SourceType.Name, DestinationType.Name);
-		}
-
-		public TypeMap GetContextTypeMap()
-		{
-			TypeMap typeMap = TypeMap;
-			ResolutionContext parent = Parent;
-			while ((typeMap == null) && (parent != null))
-			{
-				typeMap = parent.TypeMap;
-				parent = parent.Parent;
-			}
-			return typeMap;
-		}
-
-		public PropertyMap GetContextPropertyMap()
-		{
-			PropertyMap propertyMap = PropertyMap;
-			ResolutionContext parent = Parent;
-			while ((propertyMap == null) && (parent != null))
-			{
-				propertyMap = parent.PropertyMap;
-				parent = parent.Parent;
-			}
-			return propertyMap;
-		}
-
-		public bool Equals(ResolutionContext other)
-		{
-			if (ReferenceEquals(null, other)) return false;
-			if (ReferenceEquals(this, other)) return true;
-			return Equals(other.TypeMap, TypeMap) && Equals(other.SourceType, SourceType) && Equals(other.DestinationType, DestinationType) && Equals(other.SourceValue, SourceValue);
-		}
-
-		public override bool Equals(object obj)
-		{
-			if (ReferenceEquals(null, obj)) return false;
-			if (ReferenceEquals(this, obj)) return true;
-			if (obj.GetType() != typeof (ResolutionContext)) return false;
-			return Equals((ResolutionContext) obj);
-		}
-
-		public override int GetHashCode()
-		{
-			unchecked
-			{
-				int result = (TypeMap != null ? TypeMap.GetHashCode() : 0);
-				result = (result*397) ^ (SourceType != null ? SourceType.GetHashCode() : 0);
-				result = (result*397) ^ (DestinationType != null ? DestinationType.GetHashCode() : 0);
-				result = (result*397) ^ (SourceValue != null ? SourceValue.GetHashCode() : 0);
-				return result;
-			}
-		}
-
-		public static ResolutionContext New<TSource>(TSource sourceValue)
-		{
-			return new ResolutionContext(null, sourceValue, typeof (TSource), null, new MappingOperationOptions());
-		}
-	}
-
+        return depth > typeMap.MaxDepth;
+    }
+    internal bool IsDefault => this == _mapper.DefaultContext;
+    Func<Type, object> IInternalRuntimeMapper.ServiceCtor => ServiceCtor();
+    internal static void CheckContext(ref ResolutionContext resolutionContext)
+    {
+        if (resolutionContext.IsDefault)
+        {
+            resolutionContext = new(resolutionContext._mapper);
+        }
+    }
+    internal TDestination MapInternal<TSource, TDestination>(TSource source, TDestination destination, MemberMap memberMap) =>
+        _mapper.Map(source, destination, this, memberMap: memberMap);
+    internal object Map(object source, object destination, Type sourceType, Type destinationType, MemberMap memberMap) =>
+        _mapper.Map(source, destination, this, sourceType, destinationType, memberMap);
+    private void CheckDefault()
+    {
+        if (IsDefault)
+        {
+            ThrowInvalidMap();
+        }
+    }
+    private static void ThrowInvalidMap() => throw new InvalidOperationException("Context.Items are only available when using a Map overload that takes Action<IMappingOperationOptions>! Consider using Context.TryGetItems instead.");
+}
+public readonly record struct ContextCacheKey(object Source, Type DestinationType)
+{
+    public override int GetHashCode() => HashCode.Combine(DestinationType, RuntimeHelpers.GetHashCode(Source));
+    public bool Equals(ContextCacheKey other) => DestinationType == other.DestinationType && Source == other.Source;
 }

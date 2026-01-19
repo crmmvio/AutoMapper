@@ -1,102 +1,48 @@
-﻿#if !SILVERLIGHT && !NETFX_CORE
-using System;
-using System.Collections.Specialized;
-using AutoMapper;
-using AutoMapper.Mappers;
-using Should;
-using Xunit;
+﻿using System.Collections.Specialized;
 
-namespace Automapper.UnitTests.Mappers
+namespace AutoMapper.UnitTests.Mappers;
+
+public class NameValueCollectionMapperTests
 {
-    public class NameValueCollectionMapperTests
+    public class Map
     {
-        public class IsMatch
+        [Fact]
+        public void ReturnsTheDestinationWhenPassedOne()
         {
-            [Fact]
-            public void ReturnsTrueWhenBothSourceAndDestinationTypesAreNameValueCollection()
-            {
-                var rc = new ResolutionContext(null, null, null, typeof(NameValueCollection), typeof(NameValueCollection), null);
-                var nvcm = new NameValueCollectionMapper();
+            var config = new MapperConfiguration(cfg => { });
+            IMapper mapper = new Mapper(config);
 
-                var result = nvcm.IsMatch(rc);
+            var destination = new NameValueCollection();
 
-                result.ShouldBeTrue();
-            }
+            var result = mapper.Map((NameValueCollection)null, destination);
 
-            [Fact]
-            public void ReturnsIsFalseWhenDestinationTypeIsNotNameValueCollection()
-            {
-                var rc = new ResolutionContext(null, null, null, typeof(NameValueCollection), typeof(Object), null);
-                var nvcm = new NameValueCollectionMapper();
-
-                var result = nvcm.IsMatch(rc);
-
-                result.ShouldBeFalse();
-            }            
-
-            [Fact]
-            public void ReturnsIsFalseWhenSourceTypeIsNotNameValueCollection()
-            {
-                var rc = new ResolutionContext(null, null, null, typeof(Object), typeof(NameValueCollection), null);
-                var nvcm = new NameValueCollectionMapper();
-
-                var result = nvcm.IsMatch(rc);
-
-                result.ShouldBeFalse();
-            }            
+            result.ShouldBeSameAs(destination);
         }
-        public class Map
+
+        [Fact]
+        public void ReturnsEmptyCollectionWhenSourceCollectionIsEmpty()
         {
-            [Fact]
-            public void ReturnsNullIfSourceTypeIsNotNameValueCollection()
-            {
-                var rc = new ResolutionContext(null, new Object(), new NameValueCollection(), typeof(Object), typeof(NameValueCollection), null);
-                var nvcm = new NameValueCollectionMapper();
+            var config = new MapperConfiguration(cfg => { });
+            IMapper mapper = new Mapper(config);
 
-                var result = nvcm.Map(rc, null);
+            var result = mapper.Map(new NameValueCollection(), (NameValueCollection)null);
 
-                result.ShouldBeNull();
-            }
-
-            [Fact]
-            public void ReturnsNullIfSourceValueIsNull()
-            {
-                var rc = new ResolutionContext(null, null, new NameValueCollection(), typeof(NameValueCollection), typeof(NameValueCollection), null);
-                var nvcm = new NameValueCollectionMapper();
-
-                var result = nvcm.Map(rc, null);
-
-                result.ShouldBeNull();
-            }
-
-            [Fact]
-            public void ReturnsEmptyCollectionWhenSourceCollectionIsEmpty()
-            {
-                var sourceValue = new NameValueCollection();
-                var rc = new ResolutionContext(null, sourceValue, new NameValueCollection(), typeof(NameValueCollection), typeof(NameValueCollection), null);
-                var nvcm = new NameValueCollectionMapper();
-
-                var result = nvcm.Map(rc, null) as NameValueCollection;
-
-                result.ShouldBeEmpty(); 
-            }
-
-            [Fact]
-            public void ReturnsMappedObjectWithExpectedValuesWhenSourceCollectionHasOneItem()
-            {
-                var sourceValue = new NameValueCollection() { { "foo", "bar" } };
-                var rc = new ResolutionContext(null, sourceValue, new NameValueCollection(), typeof(NameValueCollection), typeof(NameValueCollection), null);
-
-                var nvcm = new NameValueCollectionMapper();
-
-                var result = nvcm.Map(rc, null) as NameValueCollection;
-
-                1.ShouldEqual(result.Count);
-                "foo".ShouldEqual(result.AllKeys[0]);
-                "bar".ShouldEqual(result["foo"]);
-            }
+            result.ShouldBeEmpty(); 
         }
-        
+
+        [Fact]
+        public void ReturnsMappedObjectWithExpectedValuesWhenSourceCollectionHasOneItem()
+        {
+            var config = new MapperConfiguration(cfg => { });
+            IMapper mapper = new Mapper(config);
+            var sourceValue = new NameValueCollection() { { "foo", "bar" } };
+
+            var result = mapper.Map(sourceValue, new NameValueCollection());
+
+            1.ShouldBe(result.Count);
+            "foo".ShouldBe(result.AllKeys[0]);
+            "bar".ShouldBe(result["foo"]);
+        }
     }
+    
 }
-#endif

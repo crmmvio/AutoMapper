@@ -1,192 +1,195 @@
-﻿using System.Collections.Generic;
-using Should;
-using Xunit;
+﻿namespace AutoMapper.UnitTests.Bug;
 
-namespace AutoMapper.UnitTests.Bug
+public class PropertyOnMappingShouldResolveMostSpecificType
 {
-    public class PropertyOnMappingShouldResolveMostSpecificType
+    public class ItemBase
     {
-        public class ItemBase
+        public string SomeBaseProperty { get; set; }
+    }
+
+    public class GenericItem : ItemBase{}
+
+    public class SpecificItem :ItemBase{}
+
+    public class DifferentItem : GenericItem { }
+    public class DifferentItem2 : GenericItem { }
+
+    public class ItemDto
+    {
+        public DescriptionBaseDto Description { get; set; }
+        public string SomeProperty { get; set; }
+    }
+
+    public class SpecificItemDto : ItemDto{}
+
+
+    public class DescriptionBaseDto{}
+
+    public class GenericDescriptionDto : DescriptionBaseDto{}
+
+    public class SpecificDescriptionDto : DescriptionBaseDto{}
+    public class DifferentDescriptionDto : GenericDescriptionDto { }
+    public class DifferentDescriptionDto2 : GenericDescriptionDto { }
+
+    public class Container
+    {
+        public Container()
         {
-            public string SomeBaseProperty { get; set; }
+            Items = new List<ItemBase>();
         }
+        public List<ItemBase> Items { get; private set; }
+    }
 
-        public class GenericItem : ItemBase{}
-
-        public class SpecificItem :ItemBase{}
-
-        public class DifferentItem : GenericItem { }
-        public class DifferentItem2 : GenericItem { }
-
-        public class ItemDto
+    public class ContainerDto
+    {
+        public ContainerDto()
         {
-            public DescriptionBaseDto Description { get; set; }
-            public string SomeProperty { get; set; }
+            Items = new List<ItemDto>();
         }
+        public List<ItemDto> Items { get; private set; }
+    }
 
-        public class SpecificItemDto : ItemDto{}
-
-
-        public class DescriptionBaseDto{}
-
-        public class GenericDescriptionDto : DescriptionBaseDto{}
-
-        public class SpecificDescriptionDto : DescriptionBaseDto{}
-        public class DifferentDescriptionDto : GenericDescriptionDto { }
-        public class DifferentDescriptionDto2 : GenericDescriptionDto { }
-
-        public class Container
+    [Fact]
+    public void container_class_is_caching_too_specific_mapper_for_collection()
+    {
+        var config = new MapperConfiguration(cfg =>
         {
-            public Container()
-            {
-                Items = new List<ItemBase>();
-            }
-            public List<ItemBase> Items { get; private set; }
-        }
-
-        public class ContainerDto
-        {
-            public ContainerDto()
-            {
-                Items = new List<ItemDto>();
-            }
-#if SILVERLIGHT
-            public List<ItemDto> Items { get; set; }
-#else
-            public List<ItemDto> Items { get; private set; }
-#endif
-        }
-
-        [Fact]
-        public void container_class_is_caching_too_specific_mapper_for_collection()
-        {
-            Mapper.CreateMap<ItemBase, ItemDto>()
+            cfg.CreateMap<ItemBase, ItemDto>()
                 .ForMember(d => d.Description, m => m.MapFrom(s => s))
                 .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty))
                 .Include<SpecificItem, SpecificItemDto>();
-            Mapper.CreateMap<SpecificItem, SpecificItemDto>()
+            cfg.CreateMap<SpecificItem, SpecificItemDto>()
                 .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty));
 
-            Mapper.CreateMap<ItemBase, DescriptionBaseDto>()
+            cfg.CreateMap<ItemBase, DescriptionBaseDto>()
                 .Include<GenericItem, GenericDescriptionDto>()
                 .Include<SpecificItem, SpecificDescriptionDto>();
 
-            Mapper.CreateMap<SpecificItem, SpecificDescriptionDto>();
-            Mapper.CreateMap<GenericItem, GenericDescriptionDto>()
+            cfg.CreateMap<SpecificItem, SpecificDescriptionDto>();
+            cfg.CreateMap<GenericItem, GenericDescriptionDto>()
                 .Include<DifferentItem, DifferentDescriptionDto>()
                 .Include<DifferentItem2, DifferentDescriptionDto2>();
-            Mapper.CreateMap<DifferentItem, DifferentDescriptionDto>();
-            Mapper.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
+            cfg.CreateMap<DifferentItem, DifferentDescriptionDto>();
+            cfg.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
 
-            Mapper.CreateMap<Container, ContainerDto>();
+            cfg.CreateMap<Container, ContainerDto>();
+        });
 
-            var dto = Mapper.Map<Container, ContainerDto>(new Container
-                                                              {
-                                                                  Items =
-                                                                      {
-                                                                          new DifferentItem(),
-                                                                          new SpecificItem()
-                                                                      }
-                                                              });
+        var dto = config.CreateMapper().Map<Container, ContainerDto>(new Container
+                                                          {
+                                                              Items =
+                                                                  {
+                                                                      new DifferentItem(),
+                                                                      new SpecificItem()
+                                                                  }
+                                                          });
 
-            dto.Items[0].Description.ShouldBeType<DifferentDescriptionDto>();
-            dto.Items[1].ShouldBeType<SpecificItemDto>();
-            dto.Items[1].Description.ShouldBeType<SpecificDescriptionDto>();
-        }
+        dto.Items[0].Description.ShouldBeOfType<DifferentDescriptionDto>();
+        dto.Items[1].ShouldBeOfType<SpecificItemDto>();
+        dto.Items[1].Description.ShouldBeOfType<SpecificDescriptionDto>();
+    }
 
-        [Fact]
-        public void container_class_is_caching_too_specific_mapper_for_collection_with_one_parameter()
+    [Fact]
+    public void container_class_is_caching_too_specific_mapper_for_collection_with_one_parameter()
+    {
+        var config = new MapperConfiguration(cfg =>
         {
-            Mapper.CreateMap<ItemBase, ItemDto>()
+            cfg.CreateMap<ItemBase, ItemDto>()
                 .ForMember(d => d.Description, m => m.MapFrom(s => s))
                 .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty))
                 .Include<SpecificItem, SpecificItemDto>();
-            Mapper.CreateMap<SpecificItem, SpecificItemDto>()
+            cfg.CreateMap<SpecificItem, SpecificItemDto>()
                 .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty));
 
-            Mapper.CreateMap<ItemBase, DescriptionBaseDto>()
+            cfg.CreateMap<ItemBase, DescriptionBaseDto>()
                 .Include<GenericItem, GenericDescriptionDto>()
                 .Include<SpecificItem, SpecificDescriptionDto>();
 
-            Mapper.CreateMap<SpecificItem, SpecificDescriptionDto>();
-            Mapper.CreateMap<GenericItem, GenericDescriptionDto>()
+            cfg.CreateMap<SpecificItem, SpecificDescriptionDto>();
+            cfg.CreateMap<GenericItem, GenericDescriptionDto>()
                 .Include<DifferentItem, DifferentDescriptionDto>()
                 .Include<DifferentItem2, DifferentDescriptionDto2>();
-            Mapper.CreateMap<DifferentItem, DifferentDescriptionDto>();
-            Mapper.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
+            cfg.CreateMap<DifferentItem, DifferentDescriptionDto>();
+            cfg.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
 
-            Mapper.CreateMap<Container, ContainerDto>();
+            cfg.CreateMap<Container, ContainerDto>();
+        });
 
-            var dto = Mapper.Map<ContainerDto>(new Container
-            {
-                Items =
-                                                                      {
-                                                                          new DifferentItem(),
-                                                                          new SpecificItem()
-                                                                      }
-            });
-
-            dto.Items[0].Description.ShouldBeType<DifferentDescriptionDto>();
-            dto.Items[1].ShouldBeType<SpecificItemDto>();
-            dto.Items[1].Description.ShouldBeType<SpecificDescriptionDto>();
-        }
-
-        [Fact]
-        public void property_on_dto_mapped_from_self_should_be_specific_match()
+        var dto = config.CreateMapper().Map<ContainerDto>(new Container
         {
-            Mapper.CreateMap<ItemBase, ItemDto>()
-                .ForMember(d=>d.Description, m=>m.MapFrom(s=>s))
-                .ForMember(d=>d.SomeProperty, m=>m.MapFrom(s=>s.SomeBaseProperty))
-                .Include<SpecificItem, SpecificItemDto>();
-            Mapper.CreateMap<SpecificItem, SpecificItemDto>()
-                .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty));
+            Items =
+                                                                  {
+                                                                      new DifferentItem(),
+                                                                      new SpecificItem()
+                                                                  }
+        });
 
-            Mapper.CreateMap<ItemBase, DescriptionBaseDto>()
-                .Include<GenericItem, GenericDescriptionDto>()
-                .Include<SpecificItem, SpecificDescriptionDto>();
+        dto.Items[0].Description.ShouldBeOfType<DifferentDescriptionDto>();
+        dto.Items[1].ShouldBeOfType<SpecificItemDto>();
+        dto.Items[1].Description.ShouldBeOfType<SpecificDescriptionDto>();
+    }
 
-            Mapper.CreateMap<SpecificItem, SpecificDescriptionDto>();
-            Mapper.CreateMap<GenericItem, GenericDescriptionDto>()
-                .Include<DifferentItem, DifferentDescriptionDto>()
-                .Include<DifferentItem2, DifferentDescriptionDto2>();
-            Mapper.CreateMap<DifferentItem, DifferentDescriptionDto>();
-            Mapper.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
-
-            Mapper.AssertConfigurationIsValid();
-
-            var dto = Mapper.Map<ItemBase, ItemDto>(new DifferentItem());
-
-            dto.ShouldBeType<ItemDto>();
-            dto.Description.ShouldBeType<DifferentDescriptionDto>();
-        }
-
-        [Fact]
-        public void property_on_dto_mapped_from_self_should_be_specific_match_with_one_parameter()
+    [Fact]
+    public void property_on_dto_mapped_from_self_should_be_specific_match()
+    {
+        var config = new MapperConfiguration(cfg =>
         {
-            Mapper.CreateMap<ItemBase, ItemDto>()
+            cfg.CreateMap<ItemBase, ItemDto>()
                 .ForMember(d => d.Description, m => m.MapFrom(s => s))
                 .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty))
                 .Include<SpecificItem, SpecificItemDto>();
-            Mapper.CreateMap<SpecificItem, SpecificItemDto>()
+            cfg.CreateMap<SpecificItem, SpecificItemDto>()
                 .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty));
 
-            Mapper.CreateMap<ItemBase, DescriptionBaseDto>()
+            cfg.CreateMap<ItemBase, DescriptionBaseDto>()
                 .Include<GenericItem, GenericDescriptionDto>()
                 .Include<SpecificItem, SpecificDescriptionDto>();
 
-            Mapper.CreateMap<SpecificItem, SpecificDescriptionDto>();
-            Mapper.CreateMap<GenericItem, GenericDescriptionDto>()
+            cfg.CreateMap<SpecificItem, SpecificDescriptionDto>();
+            cfg.CreateMap<GenericItem, GenericDescriptionDto>()
                 .Include<DifferentItem, DifferentDescriptionDto>()
                 .Include<DifferentItem2, DifferentDescriptionDto2>();
-            Mapper.CreateMap<DifferentItem, DifferentDescriptionDto>();
-            Mapper.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
+            cfg.CreateMap<DifferentItem, DifferentDescriptionDto>();
+            cfg.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
+        });
 
-            Mapper.AssertConfigurationIsValid();
+        config.AssertConfigurationIsValid();
 
-            var dto = Mapper.Map<ItemDto>(new DifferentItem());
+        var dto = config.CreateMapper().Map<ItemBase, ItemDto>(new DifferentItem());
 
-            dto.ShouldBeType<ItemDto>();
-            dto.Description.ShouldBeType<DifferentDescriptionDto>();
-        }
+        dto.ShouldBeOfType<ItemDto>();
+        dto.Description.ShouldBeOfType<DifferentDescriptionDto>();
+    }
+
+    [Fact]
+    public void property_on_dto_mapped_from_self_should_be_specific_match_with_one_parameter()
+    {
+        var config = new MapperConfiguration(cfg =>
+        {
+            cfg.CreateMap<ItemBase, ItemDto>()
+                .ForMember(d => d.Description, m => m.MapFrom(s => s))
+                .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty))
+                .Include<SpecificItem, SpecificItemDto>();
+            cfg.CreateMap<SpecificItem, SpecificItemDto>()
+                .ForMember(d => d.SomeProperty, m => m.MapFrom(s => s.SomeBaseProperty));
+
+            cfg.CreateMap<ItemBase, DescriptionBaseDto>()
+                .Include<GenericItem, GenericDescriptionDto>()
+                .Include<SpecificItem, SpecificDescriptionDto>();
+
+            cfg.CreateMap<SpecificItem, SpecificDescriptionDto>();
+            cfg.CreateMap<GenericItem, GenericDescriptionDto>()
+                .Include<DifferentItem, DifferentDescriptionDto>()
+                .Include<DifferentItem2, DifferentDescriptionDto2>();
+            cfg.CreateMap<DifferentItem, DifferentDescriptionDto>();
+            cfg.CreateMap<DifferentItem2, DifferentDescriptionDto2>();
+        });
+
+        config.AssertConfigurationIsValid();
+
+        var dto = config.CreateMapper().Map<ItemDto>(new DifferentItem());
+
+        dto.ShouldBeOfType<ItemDto>();
+        dto.Description.ShouldBeOfType<DifferentDescriptionDto>();
     }
 }

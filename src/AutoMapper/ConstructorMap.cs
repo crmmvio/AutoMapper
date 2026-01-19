@@ -1,48 +1,107 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using AutoMapper.Internal;
-
-namespace AutoMapper
+﻿namespace AutoMapper;
+[EditorBrowsable(EditorBrowsableState.Never)]
+public sealed class ConstructorMap
 {
-    public class ConstructorMap
+    private bool? _canResolve;
+    private readonly List<ConstructorParameterMap> _ctorParams = [];
+    public ConstructorInfo Ctor { get; private set; }
+    public IReadOnlyCollection<ConstructorParameterMap> CtorParams => _ctorParams;
+    public void Reset(ConstructorInfo ctor)
     {
-        private static readonly IDelegateFactory DelegateFactory = PlatformAdapter.Resolve<IDelegateFactory>();
-        private readonly LateBoundParamsCtor _runtimeCtor;
-        public ConstructorInfo Ctor { get; private set; }
-        public IEnumerable<ConstructorParameterMap> CtorParams { get; private set; }
-
-        public ConstructorMap(ConstructorInfo ctor, IEnumerable<ConstructorParameterMap> ctorParams)
+        Ctor = ctor;
+        _ctorParams.Clear();
+        _canResolve = null;
+    }
+    public bool CanResolve
+    {
+        get => _canResolve ??= ParametersCanResolve();
+        set => _canResolve = value;
+    }
+    bool ParametersCanResolve()
+    {
+        foreach (var param in _ctorParams)
         {
-            Ctor = ctor;
-            CtorParams = ctorParams;
-
-            _runtimeCtor = DelegateFactory.CreateCtor(ctor, CtorParams);
-        }
-
-        public object ResolveValue(ResolutionContext context, IMappingEngineRunner mappingEngine)
-        {
-            var ctorArgs = new List<object>();
-
-            foreach (var map in CtorParams)
+            if (!param.IsMapped)
             {
-                var result = map.ResolveValue(context);
-
-                var sourceType = result.Type;
-                var destinationType = map.Parameter.ParameterType;
-
-                var typeMap = mappingEngine.ConfigurationProvider.FindTypeMapFor(result, destinationType);
-
-                Type targetSourceType = typeMap != null ? typeMap.SourceType : sourceType;
-
-                var newContext = context.CreateTypeContext(typeMap, result.Value, targetSourceType, destinationType);
-
-                var value = mappingEngine.Map(newContext);
-
-                ctorArgs.Add(value);
+                return false;
             }
-
-            return _runtimeCtor(ctorArgs.ToArray());
+        }
+        return true;
+    }
+    public ConstructorParameterMap this[string name]
+    {
+        get
+        {
+            foreach (var param in _ctorParams)
+            {
+                if (param.DestinationName.Equals(name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return param;
+                }
+            }
+            return null;
         }
     }
+    public void AddParameter(ParameterInfo parameter, IEnumerable<MemberInfo> sourceMembers, TypeMap typeMap) => _ctorParams.Add(new(typeMap, parameter, sourceMembers.ToArray()));
+    public bool ApplyMap(TypeMap typeMap, IncludedMember includedMember = null)
+    {
+        var constructorMap = typeMap.ConstructorMap;
+        if(constructorMap == null)
+        {
+            return false;
+        }
+        bool applied = false;
+        foreach(var parameterMap in _ctorParams)
+        {
+            var inheritedParameterMap = constructorMap[parameterMap.DestinationName];
+            if(inheritedParameterMap is not { IsMapped: true, DestinationType: var type } || type != parameterMap.DestinationType || !parameterMap.ApplyMap(inheritedParameterMap, includedMember))
+            {
+                continue;
+            }
+            applied = true;
+            _canResolve = null;
+        }
+        return applied;
+    }
+}
+[EditorBrowsable(EditorBrowsableState.Never)]
+public class ConstructorParameterMap : MemberMap
+{
+    public ConstructorParameterMap(TypeMap typeMap, ParameterInfo parameter, MemberInfo[] sourceMembers) : base(typeMap, parameter.ParameterType)
+    {
+        Parameter = parameter;
+        if(DestinationType.IsByRef)
+        {
+            DestinationType = DestinationType.GetElementType();
+        }
+        if (sourceMembers.Length > 0)
+        {
+            MapByConvention(sourceMembers);
+        }
+        else
+        {
+            SourceMembers = [];
+        }
+    }
+    public ParameterInfo Parameter { get; }
+    public override IncludedMember IncludedMember { get; protected set; }
+    public override MemberInfo[] SourceMembers { get; set; }
+    public override string DestinationName => Parameter.Name;
+    public Expression DefaultValue(IGlobalConfiguration configuration) => Parameter.IsOptional ? Parameter.GetDefaultValue(configuration) : configuration.Default(DestinationType);
+    public override string ToString() => $"{Parameter.Member}, parameter {DestinationName}";
+    public bool ApplyMap(ConstructorParameterMap inheritedParameterMap, IncludedMember includedMember)
+    {
+        if(includedMember != null && IsMapped)
+        {
+            return false;
+        }
+        ExplicitExpansion ??= inheritedParameterMap.ExplicitExpansion;
+        if(ApplyInheritedMap(inheritedParameterMap))
+        {
+            IncludedMember = includedMember?.Chain(inheritedParameterMap.IncludedMember);
+            return true;
+        }
+        return false;
+    }
+    public override bool? ExplicitExpansion { get; set; }
 }

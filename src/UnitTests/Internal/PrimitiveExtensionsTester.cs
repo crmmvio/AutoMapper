@@ -1,34 +1,43 @@
-using System.Collections;
-using System.Collections.Generic;
-using Xunit;
-using Should;
+using AutoMapper.Execution;
 
-namespace AutoMapper.UnitTests
+namespace AutoMapper.UnitTests;
+
+public class PrimitiveExtensionsTester
 {
-	public class PrimitiveExtensionsTester
-	{
-		[Fact]
-		public void Should_not_flag_only_enumerable_type_as_writeable_collection()
-		{
-			typeof(string).IsListOrDictionaryType().ShouldBeFalse();
-		}
+    interface Interface
+    {
+        int Value { get; }
+    }
 
-		[Fact]
-		public void Should_flag_list_as_writable_collection()
-		{
-			typeof(int[]).IsListOrDictionaryType().ShouldBeTrue();
-		}
+    class DestinationClass : Interface
+    {
+        int Interface.Value { get { return 123; } }
 
-		[Fact]
-		public void Should_flag_generic_list_as_writeable_collection()
-		{
-			typeof(List<int>).IsListOrDictionaryType().ShouldBeTrue();
-		}
+        public int PrivateProperty { get; private set; }
 
-		[Fact]
-		public void Should_flag_dictionary_as_writeable_collection()
-		{
-			typeof(Dictionary<string, int>).IsListOrDictionaryType().ShouldBeTrue();
-		}
-	}
+        public int PublicProperty { get; set; }
+    }
+
+    [Fact]
+    public void Should_find_explicitly_implemented_member() => typeof(DestinationClass).GetFieldOrProperty("Value").ShouldNotBeNull();
+
+    [Fact]
+    public void GetMembersChain()
+    {
+        Expression<Func<DateTime, DayOfWeek>> e = x => x.Date.AddDays(1).Date.AddHours(2).AddMinutes(2).Date.DayOfWeek;
+        var chain = e.GetMembersChain().Select(m => m.Name).ToArray();
+        chain.ShouldBe(new[] { "Date", "AddDays", "Date", "AddHours", "AddMinutes", "Date", "DayOfWeek" });
+    }
+    [Fact]
+    public void IsMemberPath()
+    {
+        Expression<Func<DateTime, DayOfWeek>> e = x => x.Date.AddDays(1).Date.AddHours(2).AddMinutes(2).Date.DayOfWeek;
+        e.IsMemberPath(out _).ShouldBeFalse();
+        e = x => x.Date.Date.DayOfWeek;
+        e.IsMemberPath(out _).ShouldBeTrue();
+        e = x => x.DayOfWeek;
+        e.IsMemberPath(out _).ShouldBeTrue();
+        e = x => x.AddDays(1).Date.DayOfWeek;
+        e.IsMemberPath(out _).ShouldBeFalse();
+    }
 }

@@ -1,36 +1,30 @@
-using System;
+namespace Benchmark;
 
-namespace Benchmark
+public class BenchEngine
 {
-	public class BenchEngine
-	{
-		private readonly IObjectToObjectMapper _mapper;
-		private readonly string _mode;
+    private readonly IObjectToObjectMapper _mapper;
+    private readonly string _mode;
 
-		public BenchEngine(IObjectToObjectMapper mapper, string mode)
-		{
-			_mapper = mapper;
-			_mode = mode;
-		}
+    public BenchEngine(IObjectToObjectMapper mapper, string mode)
+    {
+        _mapper = mapper;
+        _mode = mode;
+    }
 
+    public void Start()
+    {
+        _mapper.Initialize();
+        _mapper.Map();
 
-		public void Start()
-		{
-			var timer = new HiPerfTimer();
+        var timer = Stopwatch.StartNew();
 
-			_mapper.Initialize();
-			_mapper.Map();
+        for(int i = 0; i < 1_000_000; i++)
+        {
+            _mapper.Map();
+        }
 
-			timer.Start();
+        timer.Stop();
 
-			for (int i = 0; i < 100000; i++)
-			{
-				_mapper.Map();
-			}
-
-			timer.Stop();
-
-			Console.WriteLine("{0}: - {1} - Mapping time: \t{2}s", _mapper.Name, _mode, timer.Duration);
-		}
-	}
+        Console.WriteLine("{2:D3} ms {0}: - {1}", _mapper.Name, _mode, (int)timer.Elapsed.TotalMilliseconds);
+    }
 }

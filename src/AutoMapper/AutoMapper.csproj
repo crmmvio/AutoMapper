@@ -1,172 +1,74 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProductVersion>9.0.30729</ProductVersion>
-    <SchemaVersion>2.0</SchemaVersion>
-    <ProjectGuid>{DDF551F9-B27D-4283-BFA0-E7068E05967D}</ProjectGuid>
-    <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>AutoMapper</RootNamespace>
+    <Summary>A convention-based object-object mapper.</Summary>
+    <Description>A convention-based object-object mapper.</Description>
+    <TargetFrameworks>netstandard2.0;net8.0;net9.0;net10.0</TargetFrameworks>
+    <LangVersion>14.0</LangVersion>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <AssemblyName>AutoMapper</AssemblyName>
-    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <SignAssembly>false</SignAssembly>
-    <AssemblyOriginatorKeyFile>
-    </AssemblyOriginatorKeyFile>
-    <FileUpgradeFlags>
-    </FileUpgradeFlags>
-    <OldToolsVersion>3.5</OldToolsVersion>
-    <UpgradeBackupLocation />
-    <PublishUrl>publish\</PublishUrl>
-    <Install>true</Install>
-    <InstallFrom>Disk</InstallFrom>
-    <UpdateEnabled>false</UpdateEnabled>
-    <UpdateMode>Foreground</UpdateMode>
-    <UpdateInterval>7</UpdateInterval>
-    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
-    <UpdatePeriodically>false</UpdatePeriodically>
-    <UpdateRequired>false</UpdateRequired>
-    <MapFileExtensions>true</MapFileExtensions>
-    <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
-    <IsWebBootstrapper>false</IsWebBootstrapper>
-    <UseApplicationTrust>false</UseApplicationTrust>
-    <BootstrapperEnabled>true</BootstrapperEnabled>
-    <TargetFrameworkProfile>Profile88</TargetFrameworkProfile>
-    <ProjectTypeGuids>{786C830F-07A1-408B-BD7F-6EE04809D6DB};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <MinimumVisualStudioVersion>10.0</MinimumVisualStudioVersion>
+    <AssemblyOriginatorKeyFile>..\..\AutoMapper.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PackageId>AutoMapper</PackageId>
+    <PackageIcon>icon.png</PackageIcon>
+    <PackageProjectUrl>https://automapper.io</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageRequireLicenseAcceptance>True</PackageRequireLicenseAcceptance>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+
+    <MinVerDefaultPreReleaseIdentifiers>preview.0</MinVerDefaultPreReleaseIdentifiers>
+    <MinVerTagPrefix>v</MinVerTagPrefix>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+    <BaselineAllAPICompatError>true</BaselineAllAPICompatError>
+    <AdditionalApiCompatOptions>--exclude-non-browsable --exclude-compiler-generated</AdditionalApiCompatOptions>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\Debug\AutoMapper.xml</DocumentationFile>
-    <NoWarn>1591</NoWarn>
+
+  <PropertyGroup Condition=" '$(IsWindows)' == 'true' ">
+    <TargetFrameworks>$(TargetFrameworks);net471</TargetFrameworks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
-    <DocumentationFile>bin\Release\AutoMapper.xml</DocumentationFile>
-  </PropertyGroup>
+  
   <ItemGroup>
-    <Compile Include="..\CommonAssemblyInfo.cs">
-      <Link>Properties\CommonAssemblyInfo.cs</Link>
-    </Compile>
-    <Compile Include="Internal\DelegateFactory.cs" />
-    <Compile Include="Internal\DictionaryFactory.cs" />
-    <Compile Include="Internal\ExpressionVisitor.cs" />
-    <Compile Include="Internal\IDictionary.cs" />
-    <Compile Include="Internal\AliasedMember.cs" />
-    <Compile Include="Internal\IAdapterResolver.cs" />
-    <Compile Include="Internal\NoOpReaderWriterLockFactory.cs" />
-    <Compile Include="Internal\NotSupportedEnumNameValueMappingFactory.cs" />
-    <Compile Include="Internal\NotSupportedProxyGeneratorFactory.cs" />
-    <Compile Include="Internal\PlatformAdapter.cs" />
-    <Compile Include="Internal\ProbingAdapterResolver.cs" />
-    <Compile Include="Internal\SetFactory.cs" />
-    <Compile Include="Mapper.cs" />
-    <Compile Include="Mappers\ExplicitConversionOperatorMapper.cs" />
-    <Compile Include="Mappers\IMapperRegistry.cs" />
-    <Compile Include="Mappers\ImplicitConversionOperatorMapper.cs" />
-    <Compile Include="Mappers\MapperRegistry.cs" />
-    <Compile Include="Mappers\PrimitiveArrayMapper.cs" />
-    <Compile Include="MemberList.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="AutoMapperMappingException.cs" />
-    <Compile Include="ConstructorMap.cs" />
-    <Compile Include="ConstructorParameterMap.cs" />
-    <Compile Include="IgnoreMapAttribute.cs" />
-    <Compile Include="IMappingAction.cs" />
-    <Compile Include="IMappingEngineRunner.cs" />
-    <Compile Include="IMappingOperationOptions.cs" />
-    <Compile Include="INamingConvention.cs" />
-    <Compile Include="Internal\DelegateBasedResolver2.cs" />
-    <Compile Include="Internal\DeferredInstantiatedConverter.cs" />
-    <Compile Include="Internal\IDelegateFactory.cs" />
-    <Compile Include="Internal\ITypeMapFactory.cs" />
-    <Compile Include="Internal\DefaultResolver.cs" />
-    <Compile Include="Internal\DeferredInstantiatedFormatter.cs" />
-    <Compile Include="Internal\DeferredInstantiatedResolver.cs" />
-    <Compile Include="Internal\ExpressionValueFormatter.cs" />
-    <Compile Include="Internal\FieldGetter.cs" />
-    <Compile Include="Internal\FormatterCtorExpression.cs" />
-    <Compile Include="IFormatterConfiguration.cs" />
-    <Compile Include="Internal\MemberGetter.cs" />
-    <Compile Include="Internal\MethodGetter.cs" />
-    <Compile Include="Internal\PropertyGetter.cs" />
-    <Compile Include="IMemberGetter.cs" />
-    <Compile Include="Internal\PropertyNameResolver.cs" />
-    <Compile Include="Internal\TypePair.cs" />
-    <Compile Include="IObjectMapper.cs" />
-    <Compile Include="AutoMapperConfigurationException.cs" />
-    <Compile Include="ITypeConverter.cs" />
-    <Compile Include="ConfigurationStore.cs" />
-    <Compile Include="Internal\EnumerableExtensions.cs" />
-    <Compile Include="Internal\FormatterExpression.cs" />
-    <Compile Include="IConfigurationProvider.cs" />
-    <Compile Include="IFormatterExpression.cs" />
-    <Compile Include="IMappingEngine.cs" />
-    <Compile Include="IMappingExpression.cs" />
-    <Compile Include="IValueFormatter.cs" />
-    <Compile Include="IValueResolver.cs" />
-    <Compile Include="Mappers\ArrayMapper.cs" />
-    <Compile Include="Mappers\CollectionMapper.cs" />
-    <Compile Include="Mappers\FlagsEnumMapper.cs" />
-    <Compile Include="Mappers\DictionaryMapper.cs" />
-    <Compile Include="Mappers\EnumerableMapper.cs" />
-    <Compile Include="Mappers\EnumerableMapperBase.cs" />
-    <Compile Include="Mappers\EnumMapper.cs" />
-    <Compile Include="Mappers\AssignableMapper.cs" />
-    <Compile Include="Mappers\ITypeMapObjectMapper.cs" />
-    <Compile Include="Mappers\NullableMapper.cs" />
-    <Compile Include="Mappers\ObjectCreator.cs" />
-    <Compile Include="Mappers\ReadOnlyCollectionMapper.cs" />
-    <Compile Include="Mappers\StringMapper.cs" />
-    <Compile Include="Mappers\TypeHelper.cs" />
-    <Compile Include="Mappers\TypeMapMapper.cs" />
-    <Compile Include="Mappers\TypeMapObjectMapperRegistry.cs" />
-    <Compile Include="MappingEngine.cs" />
-    <Compile Include="Internal\MappingExpression.cs" />
-    <Compile Include="Internal\DelegateBasedResolver.cs" />
-    <Compile Include="Internal\NullReplacementMethod.cs" />
-    <Compile Include="Internal\PrimitiveExtensions.cs" />
-    <Compile Include="Profile.cs" />
-    <Compile Include="PropertyMap.cs" />
-    <Compile Include="Internal\ReflectionHelper.cs" />
-    <Compile Include="Internal\ProxyBase.cs" />
-    <Compile Include="QueryableExtensions.cs" />
-    <Compile Include="ResolutionContext.cs" />
-    <Compile Include="Internal\ResolutionExpression.cs" />
-    <Compile Include="ResolutionResult.cs" />
-    <Compile Include="SourceMemberConfig.cs" />
-    <Compile Include="ThreadSafeList.cs" />
-    <Compile Include="TypeInfo.cs" />
-    <Compile Include="TypeMap.cs" />
-    <Compile Include="Internal\TypeMapFactory.cs" />
-    <Compile Include="ValueFormatter.cs" />
-    <Compile Include="ValueResolver.cs" />
+    <ResolvedMatchingContract Include="..\LastMajorVersionBinary\AutoMapper.dll"/>
   </ItemGroup>
+
   <ItemGroup>
-    <None Include="SemanticModel.cd" />
+    <None Include="..\..\icon.png" Pack="true" PackagePath="" Visible="False"/>
+    <None Include="..\..\README.md" Pack="true" PackagePath="" Visible="False"/>
+    <None Include="..\..\LICENSE.md" Pack="true" PackagePath="" Visible="False"/>
   </ItemGroup>
-  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\Portable\$(TargetFrameworkVersion)\Microsoft.Portable.CSharp.targets" />
-  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
-       Other similar extension points exist, see Microsoft.Common.targets.
-  <Target Name="BeforeBuild">
-  </Target>
-  <Target Name="AfterBuild">
-  </Target>
-  -->
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="[10.0.0, )"/>
+    <PackageReference Include="Microsoft.Extensions.Options" Version="[10.0.0, )"/>
+    <PackageReference Include="Microsoft.IdentityModel.JsonWebTokens" Version="[8.14.0, )"/>
+    <PackageReference Include="Microsoft.Bcl.HashCode" Version="[6.0.0, )" Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net471'" />
+    <PackageReference Include="System.Reflection.Emit" Version="[4.7.0, )" Condition="'$(TargetFramework)' == 'netstandard2.0'" />
+    <PackageReference Include="PolySharp" Version="1.15.0" Condition="'$(TargetFramework)' == 'netstandard2.0' Or '$(TargetFramework)' == 'net471'" PrivateAssets="All" />
+    
+    <PackageReference Include="MinVer" Version="6.0.0" PrivateAssets="All"/>
+    <!-- <PackageReference Include="Microsoft.DotNet.ApiCompat" Version="7.0.0-beta.22074.1" PrivateAssets="All" />   -->
+  </ItemGroup>
+
+  <!-- Removing for now because of bash issues -->
+  <!-- <Target Name="PreBuild" AfterTargets="GetAssemblyVersion">
+    <Exec Condition=" '$(OS)' == 'Windows_NT' " Command="powershell -ExecutionPolicy Unrestricted -File &quot;$(ProjectDir)ApiCompat\PreBuild.ps1&quot; -version $(Version)" />
+    <Exec Condition=" '$(OS)' != 'Windows_NT' " Command="bash &quot;$(ProjectDir)ApiCompat/PreBuild.sh&quot; $(Version)" />
+  </Target> -->
+  <ItemGroup>
+    <Using Include="System.Linq.Expressions.Expression" Static="true"/>
+    <Using Include="AutoMapper.Execution.ExpressionBuilder" Static="true"/>
+    <Using Include="AutoMapper.Execution"/>
+    <Using Include="AutoMapper.Configuration"/>
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="AutoMapper.UnitTests, PublicKey=002400000480000094000000060200000024000052534131000400000100010079dfef85ed6ba841717e154f13182c0a6029a40794a6ecd2886c7dc38825f6a4c05b0622723a01cd080f9879126708eef58f134accdc99627947425960ac2397162067507e3c627992aa6b92656ad3380999b30b5d5645ba46cc3fcc6a1de5de7afebcf896c65fb4f9547a6c0c6433045fceccb1fa15e960d519d0cd694b29a4"/>
+    <InternalsVisibleTo Include="AutoMapper.IntegrationTests, PublicKey=002400000480000094000000060200000024000052534131000400000100010079dfef85ed6ba841717e154f13182c0a6029a40794a6ecd2886c7dc38825f6a4c05b0622723a01cd080f9879126708eef58f134accdc99627947425960ac2397162067507e3c627992aa6b92656ad3380999b30b5d5645ba46cc3fcc6a1de5de7afebcf896c65fb4f9547a6c0c6433045fceccb1fa15e960d519d0cd694b29a4"/>
+  </ItemGroup>
 </Project>

@@ -1,21 +1,11 @@
-namespace AutoMapper.Mappers
+namespace AutoMapper.Internal.Mappers;
+
+public sealed class AssignableMapper : IObjectMapper
 {
-	public class AssignableMapper : IObjectMapper
-	{
-		public object Map(ResolutionContext context, IMappingEngineRunner mapper)
-		{
-			if (context.SourceValue == null && !mapper.ShouldMapSourceValueAsNull(context))
-			{
-				return mapper.CreateObject(context);
-			}
-
-			return context.SourceValue;
-		}
-
-		public bool IsMatch(ResolutionContext context)
-		{
-			return context.DestinationType.IsAssignableFrom(context.SourceType);
-		}
-	}
-
+    public bool IsMatch(TypePair context) => context.DestinationType.IsAssignableFrom(context.SourceType);
+    public Expression MapExpression(IGlobalConfiguration configuration, ProfileMap profileMap,
+        MemberMap memberMap, Expression sourceExpression, Expression destExpression) => sourceExpression;
+#if FULL_OR_STANDARD
+    public TypePair? GetAssociatedTypes(TypePair initialTypes) => null;
+#endif
 }

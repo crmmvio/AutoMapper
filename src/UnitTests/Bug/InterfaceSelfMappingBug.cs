@@ -1,44 +1,43 @@
-﻿using Xunit;
-using Should;
+﻿namespace AutoMapper.UnitTests.Bug;
 
-namespace AutoMapper.UnitTests.Bug
+public class InterfaceSelfMappingBug
 {
-    public class InterfaceSelfMappingBug
+    public interface IFoo
     {
-        public interface IFoo
+        int Value { get; set; } 
+    }
+
+    public class Bar : IFoo
+    {
+        public int Value { get; set; }
+    }
+
+    public class Baz : IFoo
+    {
+        public int Value { get; set; }
+    }
+
+    [Fact]
+    public void Example()
+    {
+        var config = new MapperConfiguration(cfg =>
         {
-            int Value { get; set; } 
-        }
+            cfg.AllowNullCollections = true;
+            cfg.CreateMap<IFoo, IFoo>();
+        });
+        config.AssertConfigurationIsValid();
 
-        public class Bar : IFoo
+        IFoo bar = new Bar
         {
-            public int Value { get; set; }
-        }
-
-        public class Baz : IFoo
+            Value = 5
+        };
+        IFoo baz = new Baz
         {
-            public int Value { get; set; }
-        }
+            Value = 10
+        };
 
-        [Fact]
-        public void Example()
-        {
-            Mapper.Configuration.AllowNullCollections = true;
-            Mapper.CreateMap<IFoo, IFoo>();
-            Mapper.AssertConfigurationIsValid();
+        config.CreateMapper().Map(bar, baz);
 
-            IFoo bar = new Bar
-            {
-                Value = 5
-            };
-            IFoo baz = new Baz
-            {
-                Value = 10
-            };
-
-            Mapper.Map(bar, baz);
-
-            baz.Value.ShouldEqual(5);
-        }
+        baz.Value.ShouldBe(5);
     }
 }

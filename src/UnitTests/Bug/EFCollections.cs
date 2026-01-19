@@ -1,63 +1,53 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using Xunit;
-using Should;
+﻿namespace AutoMapper.UnitTests.Bug;
 
-namespace AutoMapper.UnitTests.Bug
+public class EFCollections : AutoMapperSpecBase
 {
-    public class EFCollections : AutoMapperSpecBase
+    private Dest _dest;
+
+    public class Source
     {
-        private Dest _dest;
+        public ICollection<Child> Children { get; set; }
 
-        public class Source
+    }
+
+    public class OtherSource : Source
+    {
+    }
+
+    public class OtherChild : Child
+    {
+
+    }
+
+    public class Dest
+    {
+        public ICollection<DestChild> Children { get; set; } 
+    }
+
+    public class DestChild {}
+
+    protected override MapperConfiguration CreateConfiguration() => new(cfg =>
+    {
+        cfg.CreateMap<Source, Dest>();
+        cfg.CreateMap<Child, DestChild>();
+    });
+
+    protected override void Because_of()
+    {
+        var source = new OtherSource
         {
-            public ICollection<Child> Children { get; set; }
-
-        }
-
-        public class _Source : Source
-        {
-        }
-
-        public class _Child : Child
-        {
-
-        }
-
-        public class Dest
-        {
-            public ICollection<DestChild> Children { get; set; } 
-        }
-
-        public class DestChild {}
-
-        protected override void Establish_context()
-        {
-            Mapper.Initialize(cfg =>
+            Children = new Collection<Child>
             {
-                cfg.CreateMap<Source, Dest>();
-                cfg.CreateMap<Child, DestChild>();
-            });
-        }
+                new OtherChild(),
+                new OtherChild()
+            }
+        };
+        _dest = Mapper.Map<Source, Dest>(source);
+    }
 
-        protected override void Because_of()
-        {
-            var source = new _Source
-            {
-                Children = new Collection<Child>
-                {
-                    new _Child(),
-                    new _Child()
-                }
-            };
-            _dest = Mapper.Map<Source, Dest>(source);
-        }
-
-        [Fact]
-        public void Should_map_collection_items()
-        {
-            _dest.Children.Count.ShouldEqual(2);
-        }
+    [Fact]
+    public void Should_map_collection_items()
+    {
+        _dest.Children.Count.ShouldBe(2);
     }
 }

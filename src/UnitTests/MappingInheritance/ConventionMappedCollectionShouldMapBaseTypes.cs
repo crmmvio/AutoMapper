@@ -1,99 +1,85 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using Should;
-using Xunit;
+﻿namespace AutoMapper.UnitTests.Bug;
 
-namespace AutoMapper.UnitTests.Bug
+public class ConventionMappedCollectionShouldMapBaseTypes
 {
-    public class ConventionMappedCollectionShouldMapBaseTypes
+
+    public class ItemBase{}
+    public class GeneralItem : ItemBase {}
+    public class SpecificItem : ItemBase {}
+
+    public class Container
     {
-
-        public class ItemBase{}
-        public class GeneralItem : ItemBase {}
-        public class SpecificItem : ItemBase {}
-
-        public class Container
+        public Container ()
         {
-            public Container ()
-            {
-                Items = new List<ItemBase>();
-            }
-#if SILVERLIGHT
-            public List<ItemBase> Items { get; set; }
-#else
-            public List<ItemBase> Items { get; private set; }
-#endif
+            Items = new List<ItemBase>();
         }
+        public List<ItemBase> Items { get; private set; }
+    }
 
-        public class ItemDto {}
-        public class GeneralItemDto :ItemDto {}
-        public class SpecificItemDto :ItemDto {}
+    public class ItemDto {}
+    public class GeneralItemDto :ItemDto {}
+    public class SpecificItemDto :ItemDto {}
 
-        public class ContainerDto
+    public class ContainerDto
+    {
+        public ContainerDto()
         {
-            public ContainerDto()
-            {
-                Items = new List<ItemDto>();
-            }
-#if SILVERLIGHT
-            public List<ItemDto> Items { get; set; }
-#else
-            public List<ItemDto> Items { get; private set; }
-#endif
+            Items = new List<ItemDto>();
         }
+        public List<ItemDto> Items { get; private set; }
+    }
 
-        // Getting an exception casting from SpecificItemDto to GeneralItemDto 
-        // because it is selecting too specific a mapping for the collection.
-        [Fact]
-        public void item_collection_should_map_by_base_type()
+    // Getting an exception casting from SpecificItemDto to GeneralItemDto 
+    // because it is selecting too specific a mapping for the collection.
+    [Fact]
+    public void item_collection_should_map_by_base_type()
+    {
+        var config = new MapperConfiguration(cfg =>
         {
-            Mapper.CreateMap<Container, ContainerDto>();
+            cfg.CreateMap<Container, ContainerDto>();
+            cfg.CreateMap<ItemBase, ItemDto>()
+               .Include<GeneralItem, GeneralItemDto>()
+               .Include<SpecificItem, SpecificItemDto>();
+            cfg.CreateMap<GeneralItem, GeneralItemDto>();
+            cfg.CreateMap<SpecificItem, SpecificItemDto>();
+        });
 
-            Mapper.CreateMap<ItemBase, ItemDto>()
-                .Include<GeneralItem, GeneralItemDto>()
-                .Include<SpecificItem, SpecificItemDto>();
+        var dto = config.CreateMapper().Map<Container, ContainerDto>(new Container
+                                                {
+                                                    Items =
+                                                        {
+                                                            new GeneralItem(),
+                                                            new SpecificItem()
+                                                        }
+                                                });
 
-            Mapper.CreateMap<GeneralItem, GeneralItemDto>();
-            Mapper.CreateMap<SpecificItem, SpecificItemDto>();
+        dto.Items[0].ShouldBeOfType<GeneralItemDto>();
+        dto.Items[1].ShouldBeOfType<SpecificItemDto>();
+    }
 
-            var dto = Mapper.Map<Container, ContainerDto>(new Container
-                                                    {
-                                                        Items =
-                                                            {
-                                                                new GeneralItem(),
-                                                                new SpecificItem()
-                                                            }
-                                                    });
-
-            dto.Items[0].ShouldBeType<GeneralItemDto>();
-            dto.Items[1].ShouldBeType<SpecificItemDto>();
-        }
-
-        [Fact]
-        public void item_collection_should_map_by_base_type_for_map_with_one_parameter()
+    [Fact]
+    public void item_collection_should_map_by_base_type_for_map_with_one_parameter()
+    {
+        var config = new MapperConfiguration(cfg =>
         {
-            Mapper.CreateMap<Container, ContainerDto>();
+            cfg.CreateMap<Container, ContainerDto>();
+            cfg.CreateMap<ItemBase, ItemDto>()
+               .Include<GeneralItem, GeneralItemDto>()
+               .Include<SpecificItem, SpecificItemDto>();
+            cfg.CreateMap<GeneralItem, GeneralItemDto>();
+            cfg.CreateMap<SpecificItem, SpecificItemDto>();
+        });
 
-            Mapper.CreateMap<ItemBase, ItemDto>()
-                .Include<GeneralItem, GeneralItemDto>()
-                .Include<SpecificItem, SpecificItemDto>();
+        var dto = config.CreateMapper().Map<ContainerDto>(new Container
+        {
+            Items =
+                                                        {
+                                                            new GeneralItem(),
+                                                            new SpecificItem()
+                                                        }
+        });
 
-            Mapper.CreateMap<GeneralItem, GeneralItemDto>();
-            Mapper.CreateMap<SpecificItem, SpecificItemDto>();
-
-            var dto = Mapper.Map<ContainerDto>(new Container
-            {
-                Items =
-                                                            {
-                                                                new GeneralItem(),
-                                                                new SpecificItem()
-                                                            }
-            });
-
-            dto.Items[0].ShouldBeType<GeneralItemDto>();
-            dto.Items[1].ShouldBeType<SpecificItemDto>();
-        }
+        dto.Items[0].ShouldBeOfType<GeneralItemDto>();
+        dto.Items[1].ShouldBeOfType<SpecificItemDto>();
     }
 }
